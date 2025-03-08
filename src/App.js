@@ -1,49 +1,105 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from "react";
+import axios from "axios";
+import "./SecurityChecker.css";
 
-const App = () => {
-    const [url, setUrl] = useState('');
-    const [result, setResult] = useState(null);
+const SecurityChecker = () => {
+    const [url, setUrl] = useState("");
+    const [securityResult, setSecurityResult] = useState(null);
+    const [seoResult, setSeoResult] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const checkSecurity = async () => {
+    const handleCheckSecurity = async () => {
+        if (!url) return alert("Vui lòng nhập URL");
+
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/check-security', { url });
-            setResult(response.data);
+            const response = await axios.post("http://localhost:5000/check-security", { url });
+            setSecurityResult(response.data);
+            setSeoResult(null); // Reset SEO result khi kiểm tra bảo mật
         } catch (error) {
-            alert('Lỗi khi kiểm tra bảo mật');
+            setSecurityResult({ error: "Không thể kiểm tra URL này" });
+        }
+        setLoading(false);
+    };
+
+    const handleCheckSeo = async () => {
+        if (!url) return alert("Vui lòng nhập URL");
+
+        setLoading(true);
+        try {
+            const response = await axios.post("http://localhost:5000/check-seo", { url });
+            setSeoResult(response.data);
+            setSecurityResult(null); // Reset Security result khi kiểm tra SEO
+        } catch (error) {
+            setSeoResult({ error: "Không thể kiểm tra URL này" });
         }
         setLoading(false);
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '600px', margin: 'auto' }}>
-            <h2>Kiểm tra bảo mật Website</h2>
-            <input 
-                type='text' 
-                placeholder='Nhập URL...' 
-                value={url} 
+        <div className="security-checker">
+            <h2>🔍 Kiểm tra bảo mật & SEO Website</h2>
+            <input
+                type="text"
+                placeholder="Nhập URL cần kiểm tra..."
+                value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
             />
-            <button onClick={checkSecurity} disabled={loading} style={{ padding: '10px 20px' }}>
-                {loading ? 'Đang kiểm tra...' : 'Kiểm tra ngay'}
+            <button onClick={handleCheckSecurity} disabled={loading}>
+                {loading ? "Đang kiểm tra..." : "Kiểm tra bảo mật"}
             </button>
-            {result && (
-                <div style={{ marginTop: '20px' }}>
-                    <h3>Kết quả:</h3>
-                    <p><b>URL:</b> {result.url}</p>
-                    <p><b>Điểm bảo mật:</b> {result.securityScore}</p>
-                    <ul>
-                        {result.issues.map((issue, index) => (
-                            <li key={index}>{issue}</li>
-                        ))}
-                    </ul>
+            <button onClick={handleCheckSeo} disabled={loading}>
+                {loading ? "Đang kiểm tra..." : "Kiểm tra SEO"}
+            </button>
+
+            {/* Kết quả kiểm tra bảo mật */}
+            {securityResult && (
+                <div className="result">
+                    {securityResult.error ? (
+                        <p className="error">{securityResult.error}</p>
+                    ) : (
+                        <>
+                            <h3>📌 Kết quả Bảo mật:</h3>
+                            <p><strong>URL:</strong> {securityResult.url}</p>
+                            <p><strong>🔐 Điểm bảo mật:</strong> {securityResult.securityScore}</p>
+                            <h4>Các vấn đề bảo mật:</h4>
+                            <ul>
+                                {securityResult.issues.map((issue, index) => (
+                                    <li key={index}>
+                                        <p className="issue">{issue.message}</p>
+                                        <pre className="code">{issue.solution}</pre>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* Kết quả kiểm tra SEO */}
+            {seoResult && (
+                <div className="result">
+                    {seoResult.error ? (
+                        <p className="error">{seoResult.error}</p>
+                    ) : (
+                        <>
+                            <h3>📌 Kết quả SEO:</h3>
+                            <p><strong>URL:</strong> {seoResult.url}</p>
+                            <p><strong>🔍 Điểm SEO:</strong> {seoResult.seoScore}</p>
+                            <h4>Các vấn đề SEO:</h4>
+                            <ul>
+                                {seoResult.seoIssues.map((issue, index) => (
+                                    <li key={index}>
+                                        <p className="issue">{issue.message}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    )}
                 </div>
             )}
         </div>
     );
 };
 
-export default App;
+export default SecurityChecker;
